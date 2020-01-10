@@ -1,7 +1,7 @@
 <?php
 
 set_time_limit( 0 );
-//require "." . DIRECTORY_SEPARATOR . "CsvOut.php";
+//require __DIR__ . DIRECTORY_SEPARATOR . "CsvOut.php";
 
 class WindowsUpdateIds {
 	/** @var $date 日付 */
@@ -33,6 +33,9 @@ class WindowsUpdateIds {
 	/** @var $fullProductName 製品主キー */
 	public $fullProductName  = array( );
 
+	/** @var $osFilter OS絞込み */
+	public $osFilter = array( );
+
 }
 
 if( !is_null( $_SERVER[ 'DOCUMENT_ROOT' ] ) ) print "<!DOCTYPE html><html><head><meta charset='UTF-8'></head>";
@@ -45,9 +48,16 @@ if( !is_null( $_SERVER[ 'DOCUMENT_ROOT' ] ) ) print "<!DOCTYPE html><html><head>
  * @var $cveAdditionalInfoUrlBase CVE情報取得先URLを指定
  */
 $cveAdditionalInfoUrlBase = "http://cve.mitre.org/cgi-bin/cvename.cgi?name=";
-$test = "http://cve.circl.lu/api/cve/";
+//$test = "http://cve.circl.lu/api/cve/";
 
-$articleUrlBase = "https://support.microsoft.com/ja-jp/help/";
+//$articleUrlBase = "https://support.microsoft.com/ja-jp/help/";
+
+/**
+ * RESTful API で取得できない追加情報を取得する為のベースリンク
+ *
+ * @example https://portal.msrc.microsoft.com/api/security-guidance/ja-JP/CVE/{CVE 番号} : 例 : CVE-2019-1470
+ * */
+$deitailUrlBase = "https://portal.msrc.microsoft.com/api/security-guidance/ja-JP/CVE/";
 
 /**
  * RESTful API キーの取得には、Microsoft Account が必要になります。
@@ -55,7 +65,7 @@ $articleUrlBase = "https://support.microsoft.com/ja-jp/help/";
  * @link https://portal.msrc.microsoft.com/ja-JP/developer RESTful APIキー取得先
  * @var $api_key xxxに自分のAPIKeyを入力
  */
-$api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+$api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 /** @var  $windowsReportDate Windows SecurityReport取得月を指定 */
 $windowsReportDate = "2019-Dec"; /* YYYY-M 形式 例 : {取得年}-{各月の頭三文字} = 2019-Dec */
@@ -75,8 +85,8 @@ $restfulCurlRet = Curl( $restfulCurlOptHeader, $restUrl, true );
 $result = $restfulCurlRet[ 0 ]; // 生 json データを渡す
 $data = $restfulCurlRet[ 1 ]; // 生 json データを連想配列化したものを渡す
 
-if( file_exists( "." . DIRECTORY_SEPARATOR . "msrc.json" ) ) unlink( "." . DIRECTORY_SEPARATOR . "msrc.json" );
-error_log( $result . PHP_EOL, 3, "." . DIRECTORY_SEPARATOR . "msrc.json" );
+if( file_exists( __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" ) ) unlink( __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" );
+if( !error_log( $result, 3, __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" ) ) print PHP_EOL . "<p>おかめさん！</p>" . PHP_EOL;
 //var_dump( $data );
 
 $productIds = array( );
@@ -237,7 +247,7 @@ for( $i = 0; $i < count( $data[ "Vulnerability" ] ); $i++ ) {
 							//var_dump( $list );
 							//print "<p>" . $list[ 1 ][ 1 ] . "</p>";
 
-							//$fp = fopen( "." . DIRECTORY_SEPARATOR . 'file.csv', 'a');
+							//$fp = fopen( __DIR__ . DIRECTORY_SEPARATOR . 'file.csv', 'a');
 
 							//foreach( $list as $fields ) {
 							//	fputcsv( $fp, $fields );
@@ -260,28 +270,9 @@ for( $i = 0; $i < count( $data[ "Vulnerability" ] ); $i++ ) {
 
 }
 
-//$myCsvOut = new CsvOut( );
-//$myCsvOut->setFormat(
-//	array(
-//		array( "日付", "追加情報", "製品", "詳細", "深刻度", "OS絞込み" ),
-//		array( $myWindowsUpdayeIds->date, '=HYPERLINK(\"\"' . $myWindowsUpdayeIds->articleUrl . '\"\";\"\"' . $myWindowsUpdayeIds->deitail . '\"\")", "O" )',
-//		array( "ジョン", "23", "A" ),
-//		array( "ニキータ", "32", "AB" ),
-//		array( "次郎", "22", "B" )
-
-//	)
-
-//);
-
-//var_dump( $myWindowsUpdayeIds );
-print "<p>myWindowsUpdayeIds->product<br><pre>" . print_r( $myWindowsUpdayeIds->product ) . "</pre></p>";
-//var_dump( $myWindowsUpdayeIds->articleUrlTwo );
-//var_dump( $myWindowsUpdayeIds->kbNumberTwo );
-
-/*array( "日付", "追加情報" ),*/
-
 // カウント値を待避しておく
 $cntTaihi = count( $myWindowsUpdayeIds->date );
+print PHP_EOL . "<p>date : " . count( $myWindowsUpdayeIds->date ) . PHP_EOL;
 
 $list = array( );
 
@@ -291,13 +282,14 @@ for( $listx = 0; $listx < count( $myWindowsUpdayeIds->date ); $listx++ ) {
 
 	//if( !Search( "Server Core installation", $myWindowsUpdayeIds->product[ $listx ] ) ) {
 
-		if( Search( "Windows Server 2008 R2 for x64-based Systems Service Pack 1", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "Windows Server 2008 for 32-bit Systems Service Pack 2", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "Windows Server 2008 for x64-based Systems Service Pack 2", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "Windows Server 2012", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "Windows Server 2016", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "Windows Server 2019", $myWindowsUpdayeIds->product[ $listx ] ) ||
-			Search( "SQL	Windows Server 2012 R2	Windows Server 2012 R2", $myWindowsUpdayeIds->product[ $listx ] ) ||
+		if( preg_match( "/Windows Server 2008 R2 for x64-based Systems Service Pack 1$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2008 for 32-bit Systems Service Pack 2$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2008 for x64-based Systems Service Pack 2$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2012$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2012 R2$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2016$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			preg_match( "/Windows Server 2019$/", $myWindowsUpdayeIds->product[ $listx ] ) ||
+			Search( "SQL", $myWindowsUpdayeIds->product[ $listx ] ) ||
 			Search( "SQL Server", $myWindowsUpdayeIds->product[ $listx ] ) ||
 			Search( "Internet Explorer 6 on Windows Server", $myWindowsUpdayeIds->product[ $listx ] ) ||
 			Search( "Internet Explorer 7 on Windows Server", $myWindowsUpdayeIds->product[ $listx ] ) ||
@@ -309,13 +301,83 @@ for( $listx = 0; $listx < count( $myWindowsUpdayeIds->date ); $listx++ ) {
 
 			if( isset( $myWindowsUpdayeIds->date[ $listx ] ) ) {
 
+				// 追加情報リンクがない時
+				if( !isset( $myWindowsUpdayeIds->articleUrlTwo[ $listx ] ) ) {
+					if( Search( $myWindowsUpdayeIds->product[ $listx ], $myWindowsUpdayeIds->product[ $listx ] ) ) {
+						$deitailTmp = Curl( array( 'Accept: application/json' ), $deitailUrlBase . $myWindowsUpdayeIds->deitail[ $listx ], true );
+						//var_dump( $deitailTmp[ 1 ] );
+
+						for( $affectedCnt = 0; $affectedCnt < count( $deitailTmp[ 1 ][ "affectedProducts" ] ); $affectedCnt++ ) {
+							if( Search( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "name"], $myWindowsUpdayeIds->product[ $listx ] ) ) {
+								//var_dump( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleUrl1" ] );
+								//var_dump( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleTitle1" ] );
+								$myWindowsUpdayeIds->articleUrlTwo[ $listx ] = $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleUrl1" ];
+								$myWindowsUpdayeIds->kbNumberTwo[ $listx ] = $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleTitle1" ];
+								break;
+
+							}
+
+						}
+
+					}
+
+				} else if( !Search( $myWindowsUpdayeIds->articleUrlTwo[ $listx ], "support.microsoft.com" ) ) {
+					// 追加情報リンクが存在し, support.microsoft.com の形式でないもの
+					if( Search( $myWindowsUpdayeIds->product[ $listx ], $myWindowsUpdayeIds->product[ $listx ] ) ) {
+						$deitailTmp = Curl( array( 'Accept: application/json' ), $deitailUrlBase . $myWindowsUpdayeIds->deitail[ $listx ], true );
+						//var_dump( $deitailTmp[ 1 ] );
+
+						for( $affectedCnt = 0; $affectedCnt < count( $deitailTmp[ 1 ][ "affectedProducts" ] ); $affectedCnt++ ) {
+							if( Search( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "name"], $myWindowsUpdayeIds->product[ $listx ] ) ) {
+								//var_dump( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleUrl1" ] );
+								//var_dump( $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleTitle1" ] );
+								$myWindowsUpdayeIds->articleUrlTwo[ $listx ] = $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleUrl1" ];
+								$myWindowsUpdayeIds->kbNumberTwo[ $listx ] = $deitailTmp[ 1 ][ "affectedProducts" ][ $affectedCnt ][ "articleTitle1" ];
+								break;
+
+							}
+
+						}
+
+					}
+
+				}
+
+				// OS 絞込み処理
+				if( preg_match( '/Windows Server 2008 R2 for x64-based Systems Service Pack 1$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2008 R2(64bit)";
+
+				} else if( preg_match( '/Windows Server 2008 for 32-bit Systems Service Pack 2$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2008(32bit)";
+
+				} else if( preg_match( '/Windows Server 2008 for x64-based Systems Service Pack 2$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+						$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2008(64bit)";
+
+				} else if( preg_match( '/Windows Server 2008 R2 for x64-based Systems Service Pack 1$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2008 R2(64bit)";
+
+				} else if( preg_match( '/Windows Server 2012$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2012";
+
+				} else if( preg_match( '/Windows Server 2012 R2$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2012 R2";
+
+				} else if( preg_match( '/Windows Server 2016$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2016";
+
+				} else if( preg_match( '/Windows Server 2019$/', $myWindowsUpdayeIds->product[ $listx ] )) {
+					$myWindowsUpdayeIds->osFilter[ $listx ] = "Windows Server 2019";
+
+				}
+
 				$list[ $listx ] = array (
 				    $myWindowsUpdayeIds->date[ $listx ],
 					'=HYPERLINK("' . $myWindowsUpdayeIds->articleUrlTwo[ $listx ] . '","' . $myWindowsUpdayeIds->kbNumberTwo[ $listx ] . '")',
 					$myWindowsUpdayeIds->product[ $listx ],
 					'=HYPERLINK("' . $myWindowsUpdayeIds->deitailUrl[ $listx ] . '","' . $myWindowsUpdayeIds->deitail[ $listx ] . '")',
 					$myWindowsUpdayeIds->severity[ $listx ],
-					$myWindowsUpdayeIds->impact[ $listx ]
+					$myWindowsUpdayeIds->impact[ $listx ],
+					$myWindowsUpdayeIds->osFilter[ $listx ]
 
 				);
 
@@ -335,29 +397,15 @@ print "<p>count cntTaihi : " . count( $cntTaihi ) . "</p>";
 
 print PHP_EOL . "<p>no isset tmpx : " . count( $tmp, COUNT_RECURSIVE ) . "</p>";
 
-if( file_exists( "." . DIRECTORY_SEPARATOR . "file.csv" ) ) unlink( "." . DIRECTORY_SEPARATOR . "file.csv" );
+if( file_exists( __DIR__ . DIRECTORY_SEPARATOR . "file.csv" ) ) unlink( __DIR__ . DIRECTORY_SEPARATOR . "file.csv" );
 
-$fp = fopen( "." . DIRECTORY_SEPARATOR . 'file.csv', 'a');
+$fp = fopen( __DIR__ . DIRECTORY_SEPARATOR . 'file.csv', 'a');
 stream_filter_prepend( $fp, 'convert.iconv.utf-8/cp932' );
 
-fputcsv( $fp, array( "日付", "追加情報", "製品", "詳細", "深刻度", "影響度" ) );
+fputcsv( $fp, array( "日付", "追加情報", "製品", "詳細", "深刻度", "影響度", "OS絞込み" ) );
 
 for( $csvz = 0; $csvz < $cntTaihi; $csvz++ ) {
-	//for( $csvy = 0; $csvy < count( $list[ $csvz ] ); $csvy++ ) {
-		//print PHP_EOL . "<p>list debug : " . $list[ $csvz ][ $csvy ] . "</p>";
-		//print PHP_EOL . "<p>list count debug : " . $list[ $csvz ][ $csvy ][ 0 ] . "</p>";
 		if( isset( $list[ $csvz ] ) ) fputcsv( $fp, $list[ $csvz ] );
-
-		//for( $csvx = 0; $csvx < count( $list[ $csvz ][ $csvy ] ); $csvx++ ) {
-		//	if( isset( $list[ $csvz ][ $csvy ][ $csvx ] ) ) {
-		//		print PHP_EOL . "<p>list debug info : " . $list[ $csvz ][ $csvy ][ $csvx ] . "</p>";
-		//		fputcsv( $fp, $list[ $csvz ][ $csvy ][ $csvx ] );
-
-		//	}
-
-		//}
-
-	//}
 
 }
 
@@ -382,6 +430,7 @@ function Curl( array $arr, $url, $isHeader = false ) {
 	if( $isHeader ) curl_setopt( $ch, CURLOPT_HTTPHEADER, $arr ); // Set The Response Format to Json
 	curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, "GET" ); // using cURL for a GET request
 	curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false ); // SSL 検証無効化
+	curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false ); // SSL ホスト名一致検証無効化
 	curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true ); //文字列で結果を返させる
 	curl_setopt( $ch, CURLOPT_URL, $url );
 	$result = curl_exec( $ch );
@@ -391,7 +440,7 @@ function Curl( array $arr, $url, $isHeader = false ) {
 	var_dump( mb_detect_encoding( $result ) );
 
 	try {
-		if( $curlError[ 0 ] != null && $curlError[ 1 ] != 0 ) throw new \Exception( "curl faild" );
+		if( $curlError[ 0 ] != null && $curlError[ 1 ] != 0 ) throw new \Exception( "curl faild" . ", addional info : " . $curlError[ 0 ] );
 
 		if( $isHeader ) {
 
