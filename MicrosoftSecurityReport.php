@@ -65,7 +65,7 @@ $deitailUrlBase = "https://portal.msrc.microsoft.com/api/security-guidance/ja-JP
  * @link https://portal.msrc.microsoft.com/ja-JP/developer RESTful APIキー取得先
  * @var $api_key xxxに自分のAPIKeyを入力
  */
-$api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxx";
+$api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 /** @var  $windowsReportDate Windows SecurityReport取得月を指定 */
 $windowsReportDate = "2019-Dec"; /* YYYY-M 形式 例 : {取得年}-{各月の頭三文字} = 2019-Dec */
@@ -86,8 +86,7 @@ $result = $restfulCurlRet[ 0 ]; // 生 json データを渡す
 $data = $restfulCurlRet[ 1 ]; // 生 json データを連想配列化したものを渡す
 
 if( file_exists( __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" ) ) unlink( __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" );
-if( !error_log( $result, 3, __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" ) ) print PHP_EOL . "<p>おかめさん！</p>" . PHP_EOL;
-//var_dump( $data );
+if( !error_log( $result, 3, __DIR__ . DIRECTORY_SEPARATOR . "msrc.json" ) ) print PHP_EOL . "<p>msrc.json を作成できませんでした。</p>" . PHP_EOL;
 
 $productIds = array( );
 $productIdsOs = array( );
@@ -159,7 +158,6 @@ for( $i = 0; $i < count( $data[ "Vulnerability" ] ); $i++ ) {
 								$cntids++;
 
 								//$mytest = Curl( $restfulCurlOptHeader, $test . $data[ "Vulnerability" ][ $i ][ "CVE" ], true );
-								//print PHP_EOL . "おいしいね : " . $mytest[ 1 ][ "references" ][ 0 ];
 								//print PHP_EOL . "<p>詳細 ( Details URL ) : " . str_replace( "en-US", "ja-JP", $mytest[ 1 ][ "references" ][ 0 ] );
 
 								for( $idlistsx = 0; $idlistsx < count( $idlists ); $idlistsx++ ) {
@@ -185,10 +183,22 @@ for( $i = 0; $i < count( $data[ "Vulnerability" ] ); $i++ ) {
 
  								$myWindowsUpdayeIds->date[ $cntids ] = $tmpDate[ 0 ];
  								$myWindowsUpdayeIds->product[ $cntids ] = $productIdsOs[ $x ];
- 								$myWindowsUpdayeIds->deitail[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "CVE" ];
- 								$myWindowsUpdayeIds->severity[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "Threats" ][ 1 ][ "Description" ][ "Value" ];
- 								$myWindowsUpdayeIds->impact[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "Threats" ][ 0 ][ "Description" ][ "Value" ];
+								$myWindowsUpdayeIds->deitail[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "CVE" ];
+								 
+								// Threats 階層カウント
+								for( $threatsCnt = 0; $threatsCnt < count( $data[ "Vulnerability" ][ $i ][ "Threats" ] ); $threatsCnt++ ) {
+									// Type 深刻度 or 影響度 判定
+									if( $data[ "Vulnerability" ][ $i ][ "Threats" ][ $threatsCnt ][ "Type" ] == 3 ) {
+										// 深刻度の時
+										$myWindowsUpdayeIds->severity[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "Threats" ][ $threatsCnt ][ "Description" ][ "Value" ];
 
+									} else if( $data[ "Vulnerability" ][ $i ][ "Threats" ][ $threatsCnt ][ "Type" ] == 0 ) {
+										// 影響度の時
+										$myWindowsUpdayeIds->impact[ $cntids ] = $data[ "Vulnerability" ][ $i ][ "Threats" ][ $threatsCnt ][ "Description" ][ "Value" ];
+								
+									}
+
+								}
  								//for( $tmpx = 0; $tmpx < count( $tmp, COUNT_RECURSIVE ); $tmpx++ ) {
 								//	print PHP_EOL . "<p>no isset tmpx : " . count( $tmp ) . "</p>";
 									//if( isset( $tmp[ $tmpx ] ) ) {
@@ -272,7 +282,7 @@ for( $i = 0; $i < count( $data[ "Vulnerability" ] ); $i++ ) {
 
 // カウント値を待避しておく
 $cntTaihi = count( $myWindowsUpdayeIds->date );
-print PHP_EOL . "<p>date : " . count( $myWindowsUpdayeIds->date ) . PHP_EOL;
+print PHP_EOL . "<p>cntTaihi : " . $cntTaihi . PHP_EOL;
 
 $list = array( );
 
@@ -390,9 +400,9 @@ for( $listx = 0; $listx < count( $myWindowsUpdayeIds->date ); $listx++ ) {
 }
 
 print "<p>count list after : " . count( $list ) . "</p>";
-print "<p>count cntTaihi : " . count( $cntTaihi ) . "</p>";
+print "<p>count cntTaihi : " . $cntTaihi . "</p>";
 
-// var_dump( $idlists );
+var_dump( $list );
 // var_dump( $tmp );
 
 print PHP_EOL . "<p>no isset tmpx : " . count( $tmp, COUNT_RECURSIVE ) . "</p>";
